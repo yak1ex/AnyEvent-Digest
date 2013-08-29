@@ -1,0 +1,4 @@
+.build/
+AnyEvent-Digest-*.tar.gz
+AnyEvent-Digest-*/
+*.BAK
