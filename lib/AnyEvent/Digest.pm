@@ -6,6 +6,7 @@ use warnings;
 # ABSTRACT: A tiny AnyEvent wrapper for Digest::*
 # VERSION
 
+use Carp;
 use AnyEvent;
 use Scalar::Util qw(refaddr);
 
@@ -36,11 +37,23 @@ sub _by_idle
     $call->();
 }
 
+my %dispatch = (
+    idle => \&_by_idle,
+);
+
+sub _dispatch
+{
+    my $method = $dispatch{$_[0]->{backend}};
+    croak "Unknown backend $_[0]->{backend}" unless defined $method;
+    return $method->(@_);
+}
+
 sub new
 {
     my ($class, $base, %args) = @_;
     $class = ref $class || $class;
     $args{unit} ||= 65536;
+    $args{backend} ||= 'idle';
     return bless {
         base => $base->new(@{$args{opts}}),
         map { $_, $args{$_} } qw(backend unit),
@@ -52,7 +65,7 @@ sub add_async
     my $self = shift;
     my $cv = AE::cv;
     my (@dat) = @_;
-    $self->_by_idle($cv, sub {
+    $self->_dispatch($cv, sub {
         my $dat = shift @dat;
         $self->{base}->add($dat);
         return scalar @dat;
@@ -70,7 +83,7 @@ sub addfile_async
     } else {
         open $fh, '<:raw', $target;
     }
-    $self->_by_idle($cv, sub {
+    $self->_dispatch($cv, sub {
         read $fh, my $dat, $self->{unit};
         $self->{base}->add($dat);
         close $fh if eof $fh;
@@ -134,7 +147,7 @@ passed to C<$base::new> as C<@{$args{opts}}>. It must be an array reference.
 = C<unit>
 specifies an amount of one time read for addfile(). Defaults to 65536 = 64KiB.
 = C<backend>
-specifies a backend module to handle asynchronous read. Not yet implemented.
+specifies a backend module to handle asynchronous read. Currently, only C<'idle'> is available and default.
 
 =method C<add_async(@dat)>
 

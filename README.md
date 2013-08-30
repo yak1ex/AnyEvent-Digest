@@ -41,11 +41,11 @@ Available keys of `%args` are as follows:
 
 - `unit`
 
-    specifies an amount of one time read for addfile(). Not yet implemented.
+    specifies an amount of one time read for addfile(). Defaults to 65536 = 64KiB.
 
 - `backend`
 
-    specifies a backend module to handle asynchronous read. Not yet implemented.
+    specifies a backend module to handle asynchronous read. Currently, only `'idle'` is available and default.
 
 ## `add_async(@dat)`
 
