@@ -132,7 +132,7 @@ Available keys of C<%args> are as follows:
 = C<opts>
 passed to C<$base::new> as C<@{$args{opts}}>. It must be an array reference.
 = C<unit>
-specifies an amount of one time read for addfile(). Not yet implemented.
+specifies an amount of one time read for addfile(). Defaults to 65536 = 64KiB.
 = C<backend>
 specifies a backend module to handle asynchronous read. Not yet implemented.
 
