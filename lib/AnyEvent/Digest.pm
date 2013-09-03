@@ -10,12 +10,19 @@ use Carp;
 use AnyEvent;
 use Scalar::Util qw(refaddr);
 
+eval q{
+    use IO::AIO;
+    use AnyEvent::AIO;
+};
+my $AIO_DISABLED = 1 if $@;
+
 # Most methods are falled back to Digest
 our $AUTOLOAD;
 sub AUTOLOAD
 {
     my $self = shift;
     my $called = $AUTOLOAD =~ s/.*:://r;
+    die unless $self->{base}->can($called);
     $self->{base}->$called(@_);
 }
 
@@ -46,8 +53,30 @@ sub _file_by_idle
     });
 }
 
+sub _file_by_aio
+{
+    my ($self, $cv, $fh, $work) = @_;
+    my $size = 0;
+    my $call; $call = sub {
+        my $dat = ''; # If not initialized, "Use of uninitialized value in subroutine entry" issued.
+        IO::AIO::aio_read($fh, undef, $self->{unit}, $dat, 0, sub {
+            return $cv->croak("AnyEvent::Digest: read error") if $_[0] < 0;
+            $size += $_[0];
+            if($work->($dat)) {
+#print STDERR "0: $size $_[0] ",length($dat),"\n";
+                if($_[0] == $self->{unit}) { $call->(); } else { $cv->send($self) }
+            } else {
+#print STDERR "1: $size $_[0] ",length($dat),"\n";
+                $cv->send($self);
+            }
+        });
+    };
+    $call->();
+}
+
 my %dispatch = (
     idle => \&_file_by_idle,
+    aio => \&_file_by_aio,
 );
 
 sub _dispatch
@@ -63,6 +92,7 @@ sub new
     $class = ref $class || $class;
     $args{unit} ||= 65536;
     $args{backend} ||= 'idle';
+    croak "aio backend requires IO::AIO and AnyEvent::AIO" if $args{backend} eq 'aio' && $AIO_DISABLED;
     return bless {
         base => $base->new(@{$args{opts}}),
         map { $_, $args{$_} } qw(backend unit),
@@ -92,11 +122,15 @@ sub addfile_async
     } else {
         open $fh, '<:raw', $target;
     }
+    my $size = (stat($fh))[7];
     $self->_dispatch($cv, $fh, sub {
         my $dat = shift;
+        $size -= length($dat);
         $self->{base}->add($dat);
-        close $fh if eof $fh;
-        return ! eof $fh;
+        close $fh if ! $size;
+        return $size;
+#        close $fh if eof $fh;
+#        return ! eof $fh;
     });
     return $cv;
 }
