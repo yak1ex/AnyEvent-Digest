@@ -122,15 +122,13 @@ sub addfile_async
     } else {
         open $fh, '<:raw', $target;
     }
-    my $size = (stat($fh))[7];
     $self->_dispatch($cv, $fh, sub {
         my $dat = shift;
-        $size -= length($dat);
+        if(! length $dat) {
+            close $fh;
+            return;
+        }
         $self->{base}->add($dat);
-        close $fh if ! $size;
-        return $size;
-#        close $fh if eof $fh;
-#        return ! eof $fh;
     });
     return $cv;
 }
