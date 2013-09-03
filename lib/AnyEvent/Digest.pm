@@ -37,8 +37,17 @@ sub _by_idle
     $call->();
 }
 
+sub _file_by_idle
+{
+    my ($self, $cv, $fh, $work) = @_;
+    $self->_by_idle($cv, sub {
+        read $fh, my $dat, $self->{unit};
+        return $work->($dat);
+    });
+}
+
 my %dispatch = (
-    idle => \&_by_idle,
+    idle => \&_file_by_idle,
 );
 
 sub _dispatch
@@ -65,7 +74,7 @@ sub add_async
     my $self = shift;
     my $cv = AE::cv;
     my (@dat) = @_;
-    $self->_dispatch($cv, sub {
+    $self->_by_idle($cv, sub {
         my $dat = shift @dat;
         $self->{base}->add($dat);
         return scalar @dat;
@@ -83,18 +92,20 @@ sub addfile_async
     } else {
         open $fh, '<:raw', $target;
     }
-    $self->_dispatch($cv, sub {
-        read $fh, my $dat, $self->{unit};
+    $self->_dispatch($cv, $fh, sub {
+        my $dat = shift;
         $self->{base}->add($dat);
         close $fh if eof $fh;
         return ! eof $fh;
     });
     return $cv;
 }
+
 sub addfile
 {
     return shift->addfile_async(@_)->recv;
 }
+
 sub addfile_base
 {
     return shift->{base}->addfile(@_);
