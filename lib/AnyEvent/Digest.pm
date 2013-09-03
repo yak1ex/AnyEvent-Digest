@@ -10,11 +10,11 @@ use Carp;
 use AnyEvent;
 use Scalar::Util qw(refaddr);
 
-eval q{
-    use IO::AIO;
-    use AnyEvent::AIO;
-};
-my $AIO_DISABLED = 1 if $@;
+my $AIO_DISABLED;
+eval 'use AnyEvent::AIO';
+$AIO_DISABLED = 1 if $@;
+eval 'use IO::AIO';
+$AIO_DISABLED = 1 if $@;
 
 # Most methods are falled back to Digest
 our $AUTOLOAD;
