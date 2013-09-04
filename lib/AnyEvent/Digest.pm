@@ -64,7 +64,7 @@ sub _file_by_aio
             $size += $_[0];
             if($work->($dat)) {
 #print STDERR "0: $size $_[0] ",length($dat),"\n";
-                if($_[0] == $self->{unit}) { $call->(); } else { $cv->send($self) }
+                $call->();
             } else {
 #print STDERR "1: $size $_[0] ",length($dat),"\n";
                 $cv->send($self);
