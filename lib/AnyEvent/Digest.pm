@@ -21,7 +21,8 @@ our $AUTOLOAD;
 sub AUTOLOAD
 {
     my $self = shift;
-    my $called = $AUTOLOAD =~ s/.*:://r;
+    my $called = $AUTOLOAD;
+    $called =~ s/.*:://;
     die unless $self->{base}->can($called);
     $self->{base}->$called(@_);
 }
