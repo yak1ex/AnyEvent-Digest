@@ -57,12 +57,12 @@ sub _file_by_idle
 sub _file_by_aio
 {
     my ($self, $cv, $fh, $work) = @_;
-    my $size = 0;
+#    my $size = 0;
     my $call; $call = sub {
         my $dat = ''; # If not initialized, "Use of uninitialized value in subroutine entry" issued.
         IO::AIO::aio_read($fh, undef, $self->{unit}, $dat, 0, sub {
             return $cv->croak("AnyEvent::Digest: read error") if $_[0] < 0;
-            $size += $_[0];
+#            $size += $_[0];
             if($work->($dat)) {
 #print STDERR "0: $size $_[0] ",length($dat),"\n";
                 $call->();
