@@ -23,7 +23,7 @@ sub AUTOLOAD
     my $self = shift;
     my $called = $AUTOLOAD;
     $called =~ s/.*:://;
-    die unless $self->{base}->can($called);
+    croak "AnyEvent::Digest: Unknown method `$called' is called for `".ref($self->{base})."'" unless $self->{base}->can($called);
     $self->{base}->$called(@_);
 }
 
@@ -49,7 +49,8 @@ sub _file_by_idle
 {
     my ($self, $cv, $fh, $work) = @_;
     $self->_by_idle($cv, sub {
-        read $fh, my $dat, $self->{unit};
+        my $ret = read $fh, my $dat, $self->{unit};
+        return $cv->croak("AnyEvent::Digest: Read error occurs") unless defined($ret);
         return $work->($dat);
     });
 }
@@ -61,7 +62,7 @@ sub _file_by_aio
     my $call; $call = sub {
         my $dat = ''; # If not initialized, "Use of uninitialized value in subroutine entry" issued.
         IO::AIO::aio_read($fh, undef, $self->{unit}, $dat, 0, sub {
-            return $cv->croak("AnyEvent::Digest: read error") if $_[0] < 0;
+            return $cv->croak("AnyEvent::Digest: Read error occurs") if $_[0] < 0;
 #            $size += $_[0];
             if($work->($dat)) {
 #print STDERR "0: $size $_[0] ",length($dat),"\n";
@@ -83,7 +84,7 @@ my %dispatch = (
 sub _dispatch
 {
     my $method = $dispatch{$_[0]->{backend}};
-    croak "Unknown backend $_[0]->{backend}" unless defined $method;
+    croak "AnyEvent::Digest: Unknown backend `$_[0]->{backend}' is specified" unless defined $method;
     return $method->(@_);
 }
 
@@ -92,8 +93,10 @@ sub new
     my ($class, $base, %args) = @_;
     $class = ref $class || $class;
     $args{unit} ||= 65536;
-    $args{backend} ||= 'idle';
-    croak "aio backend requires IO::AIO and AnyEvent::AIO" if $args{backend} eq 'aio' && $AIO_DISABLED;
+    $args{backend} = 'idle' unless defined $args{backend};
+    croak "AnyEvent::Digest: `aio' backend requires `IO::AIO' and `AnyEvent::AIO'" if $args{backend} eq 'aio' && $AIO_DISABLED;
+    croak "AnyEvent::Digest: Unknown backend `$args{backend}' is specified" unless exists $dispatch{$args{backend}};
+    eval "require $base" or croak "AnyEvent::Digest: Unknown base digest module `$base' is specified";
     return bless {
         base => $base->new(@{$args{opts}}),
         map { $_, $args{$_} } qw(backend unit),
@@ -121,7 +124,7 @@ sub addfile_async
     if(ref $target) {
         $fh = $target;
     } else {
-        open $fh, '<:raw', $target;
+        open $fh, '<:raw', $target or croak "AnyEvent::Digest: Open error occurs for `$target'";
     }
     $self->_dispatch($cv, $fh, sub {
         my $dat = shift;
