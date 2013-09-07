@@ -161,45 +161,54 @@ __END__
 
 =head1 SYNOPSIS
 
+  use AnyEvent;
   use AnyEvent::Digest;
-  use Digest::SHA;
-  my $ctx = AnyEvent::Digest->new('SHA', opts => [1], unit => 65536, backend => 'IO::AIO');
-  # In addition that $ctx can be used as Digest::* object, you can call add*_async()
-  $ctx->addfile_async($file)->recv(sub {
+  my $ctx = AnyEvent::Digest->new('Digest::SHA', opts => [1], unit => 65536, backend => 'IO::AIO');
+  # In addition to that $ctx can be used as Digest::* object, you can call add*_async() methods
+  $ctx->addfile_async($file)->cb(sub {
     # Do something like the followings
-    my $ctx = $_[0]->recv;
+    my $ctx = shift->recv;
     print $ctx->hexdigest;
   });
+  AE::cv->recv; # Wait
 
 =head1 DESCRIPTION
 
 To calculate message digest for large files may take several seconds.
 It may block your program even if you use L<AnyEvent>.
-This module is a tiny AnyEvent wrapper for Digest::* modules,
+This module is a tiny L<AnyEvent> wrapper for C<Digest::*> modules,
 not to block your program during digest calculation.
+
+Default backend is to use C<AnyEvent::idle>.
+You can choose L<IO::AIO> backend. You need install L<IO::AIO> and L<AnyEvent::AIO> for L<IO::AIO> backend.
 
 =head1 METHODS
 
 In addition to the following methods, other methods are forwarded to the base module.
+So, you can use an object of this module as if it is an object of base module.
+However, C<addfile()> calls C<recv()> internally so that L<AnyEvent> backend you use SHOULD supprot blocking wait.
+If you want to avoid blocking wait, you can use C<addfile_base()> instead.
 
 =method C<new($base, %args)>
 
 This is a constructor method.
-C<$base> specifies a module name for base implementation, which is expected to be one of C<Digest::*> modules.
+C<$base> specifies a module name for base digest implementation, which is expected to be one of C<Digest::*> modules.
+C<'require'> is called for the base module, so you don't have to do C<'require'> explicitly.
+
 Available keys of C<%args> are as follows:
 
 =for :list
 = C<opts>
-passed to C<$base::new> as C<@{$args{opts}}>. It must be an array reference.
+passed to C<$base::new> as C<@{$args{opts}}>. It MUST be an array reference.
 = C<unit>
-specifies an amount of one time read for addfile(). Defaults to 65536 = 64KiB.
+specifies an amount of read unit for addfile(). Default to 65536 = 64KiB.
 = C<backend>
-specifies a backend module to handle asynchronous read. Currently, only C<'idle'> is available and default.
+specifies a backend module to handle asynchronous read. Available backends are C<'idle'> and C<'aio'>. Default to C<'idle'>.
 
 =method C<add_async(@dat)>
 
 Each item in C<@dat> are added by C<add($dat)>.
-Between the adjacent C<add()>, other AnyEvent watchers have chances to run.
+Between the adjacent C<add()>, other L<AnyEvent> watchers have chances to run.
 It returns a condition variable receiving this object itself.
 
 =method C<addfile_async($filename)>
@@ -207,12 +216,14 @@ It returns a condition variable receiving this object itself.
 =method C<addfile_async(*handle)>
 
 C<add()> is called repeatedly read from C<$filename> or C<*handle> by the specified unit.
-Between the adjacent C<add()>, other AnyEvent watchers have chances to run.
+Between the adjacent C<add()>, other L<AnyEvent> watchers have chances to run.
 It returns a condition variable receiving this object itself.
 
 =method C<add_bits_async()>
 
 Same as C<add_bits()>, except it returns a condition variable receiving this object itself.
+
+B<CAUTION:> Currerntly, other L<AnyEvent> watchers have B<NO> chance to run during this call.
 
 =method C<addfile()>
 
@@ -220,6 +231,15 @@ This method uses blocking wait + C<addfile_async()>.
 
 =method C<addfile_base()>
 
-Forwarded to C<addfile()> in the base module.
+Forwarded to C<addfile()> in the base module. If you need to avoid blocking wait somewhere, this might be helpful.
+However, during the call, other L<AnyEvent> watchers  are blocked.
+
+=head1 SEE ALSO
+
+=for :list
+* L<AnyEvent>
+* L<AnyEvent::AIO>
+* L<IO::AIO>
+* L<Digest>
 
 =cut
