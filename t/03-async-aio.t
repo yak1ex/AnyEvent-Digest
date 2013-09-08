@@ -1,5 +1,13 @@
-use Test::More tests => 4;
+use Test::More;
 use Test::Exception;
+
+BEGIN
+{
+    eval { require IO::AIO; require AnyEvent::AIO; };
+    plan skip_all => "IO::AIO and AnyEvent::AIO are required: $@" if $@;
+}
+
+plan tests => 4;
 
 use_ok 'AnyEvent::Digest';
 
