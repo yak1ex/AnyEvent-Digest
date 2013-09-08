@@ -4,7 +4,7 @@ AnyEvent::Digest - A tiny AnyEvent wrapper for Digest::\*
 
 # VERSION
 
-version v0.0.1
+version v0.0.2
 
 # SYNOPSIS
 

@@ -2,5 +2,10 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+v0.0.2    2013-09-08 18:41:19 Asia/Tokyo
+    [Non-functional changes]
+        - Add optional preereqs (close gh-3).
+        - Add a guard for IO::AIO and AnyEvent::AIO to t/03-async-aio.t (close gh-3).
+
 v0.0.1    2013-09-08 01:03:23 Asia/Tokyo
     - Initial release.
