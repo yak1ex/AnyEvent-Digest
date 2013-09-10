@@ -13,6 +13,24 @@ use_ok 'AnyEvent::Digest';
 
 use AnyEvent;
 use Digest::MD5;
+use Symbol;
+
+# See perldoc perlfork
+# simulate open(FOO, "-|")
+sub pipe_from_fork ($) {
+    my $parent = shift;
+    pipe $parent, my $child or die;
+    my $pid = fork();
+    die "fork() failed: $!" unless defined $pid;
+    if ($pid) {
+        close $child;
+    }
+    else {
+        close $parent;
+        open(STDOUT, ">&=" . fileno($child)) or die;
+    }
+    $pid;
+}
 
 my $ref = Digest::MD5->new;
 my $our;
@@ -24,7 +42,8 @@ my $w; $w = AE::timer 0, $interval, sub {
     ++$count;
 };
 
-my $pid = open my $fh, '-|';
+my $fh = gensym;
+my $pid = pipe_from_fork($fh);
 die if ! defined ($pid);
 if(!$pid) {
     binmode STDOUT;
