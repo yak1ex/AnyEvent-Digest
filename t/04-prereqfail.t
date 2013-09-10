@@ -13,11 +13,16 @@ use_ok 'AnyEvent::Digest';
 
 my $our;
 
-use Test::Without::Module qw(AnyEvent::AIO);
+# NOTE: eval is unnecessary from the viewpoint of behavior for:
+#       eval { use/no Test::Without::Module qw(...); };
+#       However, use is detected by build_prereq_matches_use,
+#       so eval guard is used.
+
+eval { use Test::Without::Module qw(AnyEvent::AIO); };
 throws_ok { $our = AnyEvent::Digest->new('Digest::MD5', backend => 'aio') }
     qr/^AnyEvent::Digest: `aio' backend requires `IO::AIO' and `AnyEvent::AIO'/, 'without AnyEvent::AIO';
 
-no  Test::Without::Module qw(AnyEvent::AIO);
-use Test::Without::Module qw(IO::AIO);
+eval { no  Test::Without::Module qw(AnyEvent::AIO); };
+eval { use Test::Without::Module qw(IO::AIO); };
 throws_ok { $our = AnyEvent::Digest->new('Digest::MD5', backend => 'aio') }
     qr/^AnyEvent::Digest: `aio' backend requires `IO::AIO' and `AnyEvent::AIO'/, 'without IO::AIO';
