@@ -27,20 +27,11 @@ sub pipe_from_fork ($) {
     }
     else {
         close $parent;
+        close STDOUT; # Without this, Win32 may be blocked
         open(STDOUT, ">&=" . fileno($child)) or die;
     }
     $pid;
 }
-
-my $ref = Digest::MD5->new;
-my $our;
-lives_ok { $our = AnyEvent::Digest->new('Digest::MD5', backend => 'aio') } 'construction';
-
-my $interval = $ENV{TEST_ANYEVENT_DIGEST_INTERVAL} || 0.01;
-my $count = 0;
-my $w; $w = AE::timer 0, $interval, sub {
-    ++$count;
-};
 
 my $fh = gensym;
 my $pid = pipe_from_fork($fh);
@@ -52,6 +43,16 @@ if(!$pid) {
 }
 #my $expected = $ref->addfile($fh)->hexdigest;
 $expected = 'aa559b4e3523a6c931f08f4df52d58f2';
+
+my $ref = Digest::MD5->new;
+my $our;
+lives_ok { $our = AnyEvent::Digest->new('Digest::MD5', backend => 'aio') } 'construction';
+
+my $interval = $ENV{TEST_ANYEVENT_DIGEST_INTERVAL} || 0.01;
+my $count = 0;
+my $w; $w = AE::timer 0, $interval, sub {
+    ++$count;
+};
 
 my $cv = AE::cv;
 $our->addfile_async($fh)->cb(sub {
