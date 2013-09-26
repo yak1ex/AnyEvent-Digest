@@ -4,18 +4,18 @@ AnyEvent::Digest - A tiny AnyEvent wrapper for Digest::\*
 
 # VERSION
 
-version v0.0.3
+version v0.0.4
 
 # SYNOPSIS
 
     use AnyEvent;
     use AnyEvent::Digest;
-    my $ctx = AnyEvent::Digest->new('Digest::SHA', opts => [1], unit => 65536, backend => 'IO::AIO');
+    my $ctx = AnyEvent::Digest->new('Digest::SHA', opts => [1], unit => 65536, backend => 'aio');
     # In addition to that $ctx can be used as Digest::* object, you can call add*_async() methods
     $ctx->addfile_async($file)->cb(sub {
       # Do something like the followings
       my $ctx = shift->recv;
-      print $ctx->hexdigest;
+      print $ctx->hexdigest,"\n";
     });
     AE::cv->recv; # Wait
 

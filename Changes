@@ -2,6 +2,10 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+v0.0.4    2013-09-26 16:31:25 Asia/Tokyo
+    [Non-functional changes]
+        - Update DZP::Test::Compile to avoid possible Win32 hangs in tests.
+
 v0.0.3    2013-09-11 23:58:11 Asia/Tokyo
     [Non-functional changes]
         - Fix hang of tests on Win32 (close gh-6).
