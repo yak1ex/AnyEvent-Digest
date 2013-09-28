@@ -39,6 +39,7 @@ sub _by_idle
                 $call->();
             };
         } else {
+            undef $call;
             $cv->send($self);
         }
     };
@@ -69,6 +70,7 @@ sub _file_by_aio
                 $call->();
             } else {
 #print STDERR "1: $size $_[0] ",length($dat),"\n";
+                undef $call;
                 $cv->send($self);
             }
         });
