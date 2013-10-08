@@ -2,6 +2,9 @@ Revision history for {{$dist->name}}
 
 {{$NEXT}}
 
+v0.0.5    2013-10-08 23:28:32 Asia/Tokyo
+    - Fix memory leaks by holding a loop sub reference (gh-8) (Thanks Zhou YuanYuan and iakuf@github).
+
 v0.0.4    2013-09-26 16:31:25 Asia/Tokyo
     [Non-functional changes]
         - Update DZP::Test::Compile to avoid possible Win32 hangs in tests.
